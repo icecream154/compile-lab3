@@ -617,24 +617,21 @@ Value *CallExprAST::codegen() {
     return Builder->CreateCall(function, ArrayRef<Value *>(args));
 }
 
+Type *getTypeFromVal(int type) {
+    if (type == type_int) return Type::getInt32Ty(*TheContext);
+    if (type == type_double) return Type::getDoubleTy(*TheContext);
+    return nullptr;
+}
+
 // an imcomplete codegen function. It can generate IR for prototype whose types of args
 // and return value are all double.
 Function *PrototypeAST::codegen() {
-    // Make the function type:  double(double,double) etc.
-    std::vector<Type *> Doubles(Args.size(), Type::getDoubleTy(*TheContext));
-
     std::vector<Type *> typeVector;
     for (auto argType: ArgTypes) {
-        if (argType == type_int)
-            typeVector.push_back(Type::getInt32Ty(*TheContext));
-        if (argType == type_double)
-            typeVector.push_back(Type::getDoubleTy(*TheContext));
+        typeVector.push_back(getTypeFromVal(argType));
     }
-    Type *retType = FnType == type_double ? Type::getDoubleTy(*TheContext) :
-                    Type::getInt32Ty(*TheContext);
     FunctionType *FT =
-            FunctionType::get(retType, ArrayRef<Type *>(typeVector), false);
-
+            FunctionType::get(getTypeFromVal(FnType), ArrayRef<Type *>(typeVector), false);
     Function *F =
             Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
 
@@ -642,7 +639,6 @@ Function *PrototypeAST::codegen() {
     unsigned Idx = 0;
     for (auto &Arg: F->args())
         Arg.setName(Args[Idx++]);
-
     return F;
 }
 
