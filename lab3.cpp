@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+
 using namespace llvm;
 using namespace llvm::sys;
 
@@ -39,21 +40,21 @@ using namespace llvm::sys;
 // The lexer returns tokens [0-255] if it is an unknown character, otherwise one
 // of these for known things.
 enum Token {
-  tok_eof = -1,
+    tok_eof = -1,
 
-  // commands
-  tok_def = -2,
-  tok_extern = -3,
+    // commands
+    tok_def = -2,
+    tok_extern = -3,
 
-  // primary
-  tok_identifier = -4,
-  tok_number_int = -5,
-  tok_number_double = -6,
+    // primary
+    tok_identifier = -4,
+    tok_number_int = -5,
+    tok_number_double = -6,
 };
 
 enum Types {
-  type_int = 1,
-  type_double = 2
+    type_int = 1,
+    type_double = 2
 };
 
 
@@ -64,9 +65,9 @@ static int NumValI;             // Filled in if tok_number_int
 static double NumValD;             // Filled in if tok_number_double
 static int ValType;               // Filled in if tok_number_double
 
-static void InitializeTypeValue(){
-  TypeValues["int"] = 1;
-  TypeValues["double"] = 2;
+static void InitializeTypeValue() {
+    TypeValues["int"] = 1;
+    TypeValues["double"] = 2;
 }
 
 /// gettok - Return the next token from standard input.
@@ -137,99 +138,102 @@ static int gettok() {
 namespace {
 
 /// ExprAST - Base class for all expression nodes.
-class ExprAST {
-public:
-  virtual ~ExprAST() = default;
+    class ExprAST {
+    public:
+        virtual ~ExprAST() = default;
 
-  virtual Value *codegen() = 0;
-};
+        virtual Value *codegen() = 0;
+    };
 
 /// NumberExprAST - Expression class for numeric literals like "1.0".
-class NumberDoubleExprAST : public ExprAST {
-  double Val;
+    class NumberDoubleExprAST : public ExprAST {
+        double Val;
 
-public:
-  NumberDoubleExprAST(double Val) : Val(Val) {}
+    public:
+        NumberDoubleExprAST(double Val) : Val(Val) {}
 
-  Value *codegen() override;
-};
+        Value *codegen() override;
+    };
 
-class NumberIntExprAST : public ExprAST {
-  int Val;
+    class NumberIntExprAST : public ExprAST {
+        int Val;
 
-public:
-  NumberIntExprAST(int Val) : Val(Val) {}
+    public:
+        NumberIntExprAST(int Val) : Val(Val) {}
 
-  Value *codegen() override;
-};
+        Value *codegen() override;
+    };
 
 /// VariableExprAST - Expression class for referencing a variable, like "a".
-class VariableExprAST : public ExprAST {
-  std::string Name;
+    class VariableExprAST : public ExprAST {
+        std::string Name;
 
-public:
-  VariableExprAST(const std::string &Name) : Name(Name) {}
+    public:
+        VariableExprAST(const std::string &Name) : Name(Name) {}
 
-  Value *codegen() override;
-};
+        Value *codegen() override;
+    };
 
 /// BinaryExprAST - Expression class for a binary operator.
-class BinaryExprAST : public ExprAST {
-  char Op;
-  std::unique_ptr<ExprAST> LHS, RHS;
+    class BinaryExprAST : public ExprAST {
+        char Op;
+        std::unique_ptr<ExprAST> LHS, RHS;
 
-public:
-  BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
-                std::unique_ptr<ExprAST> RHS)
-      : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+    public:
+        BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
+                      std::unique_ptr<ExprAST> RHS)
+                : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
-  Value *codegen() override;
-};
+        Value *codegen() override;
+    };
 
 /// CallExprAST - Expression class for function calls.
-class CallExprAST : public ExprAST {
-  std::string Callee;
-  std::vector<std::unique_ptr<ExprAST>> Args;
+    class CallExprAST : public ExprAST {
+        std::string Callee;
+        std::vector<std::unique_ptr<ExprAST>> Args;
 
-public:
-  CallExprAST(const std::string &Callee,
-              std::vector<std::unique_ptr<ExprAST>> Args)
-      : Callee(Callee), Args(std::move(Args)) {}
+    public:
+        CallExprAST(const std::string &Callee,
+                    std::vector<std::unique_ptr<ExprAST>> Args)
+                : Callee(Callee), Args(std::move(Args)) {}
 
-  Value *codegen() override;
-};
+        Value *codegen() override;
+    };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
 /// which captures its name, and its argument names (thus implicitly the number
 /// of arguments the function takes).
-class PrototypeAST {
-  std::string Name;
-  std::vector<std::string> Args;
-  std::vector<int> ArgTypes;
-  int FnType;
+    class PrototypeAST {
+        std::string Name;
+        std::vector<std::string> Args;
+        std::vector<int> ArgTypes;
+        int FnType;
 
-public:
-  PrototypeAST(const std::string &Name, std::vector<std::string> Args, std::vector<int> ArgTypes, int FnType)
-      : Name(Name), Args(std::move(Args)), ArgTypes(std::move(ArgTypes)), FnType(FnType) {}
+    public:
+        PrototypeAST(const std::string &Name, std::vector<std::string> Args, std::vector<int> ArgTypes, int FnType)
+                : Name(Name), Args(std::move(Args)), ArgTypes(std::move(ArgTypes)), FnType(FnType) {}
 
-  Function *codegen();
-  const std::string &getName() const { return Name; }
-  const int getReturnType() {return FnType;}
-  const std::vector<int> &getArgTypes() {return ArgTypes;}
-};
+        Function *codegen();
+
+        const std::string &getName() const { return Name; }
+
+        const int getReturnType() { return FnType; }
+
+        const std::vector<int> &getArgTypes() { return ArgTypes; }
+    };
 
 /// FunctionAST - This class represents a function definition itself.
-class FunctionAST {
-  std::unique_ptr<PrototypeAST> Proto;
-  std::unique_ptr<ExprAST> Body;
+    class FunctionAST {
+        std::unique_ptr<PrototypeAST> Proto;
+        std::unique_ptr<ExprAST> Body;
 
-public:
-  FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-              std::unique_ptr<ExprAST> Body)
-      : Proto(std::move(Proto)), Body(std::move(Body)) {}
+    public:
+        FunctionAST(std::unique_ptr<PrototypeAST> Proto,
+                    std::unique_ptr<ExprAST> Body)
+                : Proto(std::move(Proto)), Body(std::move(Body)) {}
 
-  Function *codegen();
-};
+        Function *codegen();
+    };
 
 } // end anonymous namespace
 
@@ -241,6 +245,7 @@ public:
 /// token the parser is looking at.  getNextToken reads another token from the
 /// lexer and updates CurTok with its results.
 static int CurTok;
+
 static int getNextToken() { return CurTok = gettok(); }
 
 /// BinopPrecedence - This holds the precedence for each binary operator that is
@@ -270,12 +275,6 @@ std::unique_ptr<FunctionAST> LogErrorF(const char *Str) {
     return nullptr;
 }
 
-/*TODO: Finish the Parse*() function to implement the Parser.
-  We provide some implemented Parse* function for reference, like
-  ParseNumberExpr(), ParseExtern(), which are marked with "example", and you can use these functions directly.
-  >>>note: You can add some other Parse*() function to help you achieve this goal,
-  >>>e.g. ParseParenExpr() which parenexpr ::= '(' expression ')'.
-*/
 static std::unique_ptr<ExprAST> ParseExpression();
 
 /// GetTokPrecedence - Get the precedence of the pending binary operator token.
@@ -324,7 +323,7 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
         while (true) {
             if (auto Arg = ParseExpression())
                 Args.push_back(std::move(Arg));
-            else //TODO: 如果是一个空方法？
+            else
                 return nullptr;
             if (CurTok == ')')
                 break;
@@ -513,30 +512,30 @@ static std::unique_ptr<LLVMContext> TheContext;
 static std::unique_ptr<Module> TheModule;
 static std::unique_ptr<IRBuilder<>> Builder;
 static std::map<std::string, Value *> NamedValues;  // used to store the variables in the Function.
-                                                    // in this lab it only store the args.
+// in this lab it only store the args.
 static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 
 
 Value *LogErrorV(const char *Str) {
-  LogError(Str);
-  return nullptr;
+    LogError(Str);
+    return nullptr;
 }
 
 // getFunction(Name) can return a Function structure variable, F, to caller, which can 
 // be used to creat a callee statement in codegen.
 Function *getFunction(std::string Name) {
-  // First, see if the function has already been added to the current module.
-  if (auto *F = TheModule->getFunction(Name))
-    return F;
+    // First, see if the function has already been added to the current module.
+    if (auto *F = TheModule->getFunction(Name))
+        return F;
 
-  // If not, check whether we can codegen the declaration from some existing
-  // prototype.
-  auto FI = FunctionProtos.find(Name);
-  if (FI != FunctionProtos.end())
-    return FI->second->codegen();
+    // If not, check whether we can codegen the declaration from some existing
+    // prototype.
+    auto FI = FunctionProtos.find(Name);
+    if (FI != FunctionProtos.end())
+        return FI->second->codegen();
 
-  // If no existing prototype exists, return null.
-  return nullptr;
+    // If no existing prototype exists, return null.
+    return nullptr;
 }
 
 
@@ -549,86 +548,144 @@ Function *getFunction(std::string Name) {
 
 //example of codegen()
 Value *NumberDoubleExprAST::codegen() {
-  return ConstantFP::get(*TheContext, APFloat(Val));
+    return ConstantFP::get(*TheContext, APFloat(Val));
 }
 
 
 //example of codegen()
 Value *NumberIntExprAST::codegen() {
-  return ConstantInt::get(*TheContext, APInt(32,Val));
+    return ConstantInt::get(*TheContext, APInt(32, Val));
 }
 
 
 //example of codegen()
 Value *VariableExprAST::codegen() {
-  // Look this variable up in the function.
-  Value *V = NamedValues[Name];
-  if (!V)
-    return LogErrorV("Unknown variable name");
-  return V;
+    // Look this variable up in the function.
+    Value *V = NamedValues[Name];
+    if (!V)
+        return LogErrorV("Unknown variable name");
+    return V;
 }
 
 
 //To Do
 Value *BinaryExprAST::codegen() {
-  return nullptr;
+    Value *leftVal = LHS->codegen();
+    Value *rightVal = RHS->codegen();
+    bool leftIsDouble = leftVal->getType()->isDoubleTy();
+    bool rightIsDouble = rightVal->getType()->isDoubleTy();
+
+    // contains double type
+    if (leftIsDouble || rightIsDouble) {
+        // change int to double type
+        if (!leftIsDouble) {
+            leftVal = Builder->CreateUIToFP(leftVal, Type::getDoubleTy(*TheContext), "tmp");
+        }
+        if (!rightIsDouble) {
+            rightVal = Builder->CreateUIToFP(rightVal, Type::getDoubleTy(*TheContext), "tmp");
+        }
+        switch (Op) {
+            case '+':
+                return Builder->CreateFAdd(leftVal, rightVal, "addtmp");
+            case '-':
+                return Builder->CreateFSub(leftVal, rightVal, "subtmp");
+            case '*':
+                return Builder->CreateFMul(leftVal, rightVal, "multmp");
+            default :
+                return Builder->CreateFCmpULT(leftVal, rightVal, "lttmp");
+        }
+    } else {
+        switch (Op) {
+            case '+':
+                return Builder->CreateAdd(leftVal, rightVal, "addtmp");
+            case '-':
+                return Builder->CreateSub(leftVal, rightVal, "subtmp");
+            case '*':
+                return Builder->CreateMul(leftVal, rightVal, "multmp");
+            default :
+                return Builder->CreateICmpULT(leftVal, rightVal, "lttmp");
+        }
+    }
 }
 
 //To Do
 Value *CallExprAST::codegen() {
-  return nullptr;
+    Function *function = getFunction(Callee);
+    std::vector<Value *> args;
+    for (auto &arg: Args)
+        args.push_back(arg->codegen());
+    return Builder->CreateCall(function, ArrayRef<Value *>(args));
 }
 
 // an imcomplete codegen function. It can generate IR for prototype whose types of args
 // and return value are all double.
 Function *PrototypeAST::codegen() {
-  // Make the function type:  double(double,double) etc.
-  std::vector<Type *> Doubles(Args.size(), Type::getDoubleTy(*TheContext));
-  FunctionType *FT =
-      FunctionType::get(Type::getDoubleTy(*TheContext), Doubles, false);
+    // Make the function type:  double(double,double) etc.
+    std::vector<Type *> Doubles(Args.size(), Type::getDoubleTy(*TheContext));
 
-  Function *F =
-      Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
+    std::vector<Type *> typeVector;
+    for (auto argType: ArgTypes) {
+        if (argType == type_int)
+            typeVector.push_back(Type::getInt32Ty(*TheContext));
+        if (argType == type_double)
+            typeVector.push_back(Type::getDoubleTy(*TheContext));
+    }
+    Type *retType = FnType == type_double ? Type::getDoubleTy(*TheContext) :
+                    Type::getInt32Ty(*TheContext);
+    FunctionType *FT =
+            FunctionType::get(retType, ArrayRef<Type *>(typeVector), false);
 
-  // Set names for all arguments.
-  unsigned Idx = 0;
-  for (auto &Arg : F->args())
-    Arg.setName(Args[Idx++]);
+    Function *F =
+            Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
 
-  return F;
+    // Set names for all arguments.
+    unsigned Idx = 0;
+    for (auto &Arg: F->args())
+        Arg.setName(Args[Idx++]);
+
+    return F;
 }
 
 // an imcomplete codegen function.
 // You should finish the ToDo part in this function
 Function *FunctionAST::codegen() {
-  // Transfer ownership of the prototype to the FunctionProtos map, but keep a
-  // reference to it for use below.
-  auto &P = *Proto;
-  FunctionProtos[Proto->getName()] = std::move(Proto);
-  Function *TheFunction = getFunction(P.getName());
-  if (!TheFunction)
+    // Transfer ownership of the prototype to the FunctionProtos map, but keep a
+    // reference to it for use below.
+    auto &P = *Proto;
+    FunctionProtos[Proto->getName()] = std::move(Proto);
+    Function *TheFunction = getFunction(P.getName());
+    if (!TheFunction)
+        return nullptr;
+
+    // Create a new basic block to start insertion into.
+    BasicBlock *BB = BasicBlock::Create(*TheContext, "entry", TheFunction);
+    Builder->SetInsertPoint(BB);
+
+    NamedValues.clear();
+    for (auto &Arg: TheFunction->args())
+        NamedValues[std::string(Arg.getName())] = &Arg;
+
+    if (Value *RetVal = Body->codegen()) {
+        //****************
+        //ToDo: correctly create the RetVal use Builder.
+        //****************
+
+        // return type is double
+        if (TheFunction->getReturnType()->isDoubleTy() && !RetVal->getType()->isDoubleTy())
+            RetVal = Builder->CreateUIToFP(RetVal, Type::getDoubleTy(*TheContext), "tmp");
+        // return type is int
+        if (!TheFunction->getReturnType()->isDoubleTy() && RetVal->getType()->isDoubleTy())
+            RetVal = Builder->CreateFPToUI(RetVal, Type::getInt32PtrTy(*TheContext), "tmp");
+        Builder->CreateRet(RetVal);
+
+        // Validate the generated code, checking for consistency.
+        verifyFunction(*TheFunction);
+        return TheFunction;
+    }
+
+    // Error reading body, remove function.
+    TheFunction->eraseFromParent();
     return nullptr;
-
-  // Create a new basic block to start insertion into.
-  BasicBlock *BB = BasicBlock::Create(*TheContext, "entry", TheFunction);
-  Builder->SetInsertPoint(BB);
-
-  NamedValues.clear();
-  for (auto &Arg : TheFunction->args())
-    NamedValues[std::string(Arg.getName())] = &Arg;
-
-  if (Value *RetVal = Body->codegen()) {
-    //****************
-    //ToDo: correctly create the RetVal use Builder.
-    //****************
-    // Validate the generated code, checking for consistency.
-    verifyFunction(*TheFunction);
-    return TheFunction;
-  }
-
-  // Error reading body, remove function.
-  TheFunction->eraseFromParent();
-  return nullptr;
 }
 
 //===----------------------------------------------------------------------===//
@@ -637,139 +694,139 @@ Function *FunctionAST::codegen() {
 //don't modify this part
 
 static void InitializeModuleAndPassManager() {
-  // Open a new context and module.
-  TheContext = std::make_unique<LLVMContext>();
-  TheModule = std::make_unique<Module>("my cool jit", *TheContext);
+    // Open a new context and module.
+    TheContext = std::make_unique<LLVMContext>();
+    TheModule = std::make_unique<Module>("my cool jit", *TheContext);
 
-  // Create a new builder for the module.
-  Builder = std::make_unique<IRBuilder<>>(*TheContext);
+    // Create a new builder for the module.
+    Builder = std::make_unique<IRBuilder<>>(*TheContext);
 }
 
 static void HandleDefinition() {
-  if (auto FnAST = ParseDefinition()) {
-    if (auto *FnIR = FnAST->codegen()) {
-      fprintf(stderr, "Read function definition:");
-      FnIR->print(errs());
-      fprintf(stderr, "\n");
+    if (auto FnAST = ParseDefinition()) {
+        if (auto *FnIR = FnAST->codegen()) {
+            fprintf(stderr, "Read function definition:");
+            FnIR->print(errs());
+            fprintf(stderr, "\n");
+        }
+    } else {
+        // Skip token for error recovery.
+        getNextToken();
     }
-  } else {
-    // Skip token for error recovery.
-    getNextToken();
-  }
 }
 
 static void HandleExtern() {
-  if (auto ProtoAST = ParseExtern()) {
-    if (auto *FnIR = ProtoAST->codegen()) {
-      fprintf(stderr, "Read extern: ");
-      FnIR->print(errs());
-      fprintf(stderr, "\n");
-      FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
+    if (auto ProtoAST = ParseExtern()) {
+        if (auto *FnIR = ProtoAST->codegen()) {
+            fprintf(stderr, "Read extern: ");
+            FnIR->print(errs());
+            fprintf(stderr, "\n");
+            FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
+        }
+    } else {
+        // Skip token for error recovery.
+        getNextToken();
     }
-  } else {
-    // Skip token for error recovery.
-    getNextToken();
-  }
 }
 
 
 /// top ::= definition | external | expression | ';'
 static void MainLoop() {
-  while (true) {
-    switch (CurTok) {
-    case tok_eof:
-      return;
-    case tok_def:
-      HandleDefinition();
-      break;
-    case tok_extern:
-      HandleExtern();
-      break;
-    default:
-      std::cout << "invalid input" << std::endl;
-      getNextToken();
-      break;
+    while (true) {
+        switch (CurTok) {
+            case tok_eof:
+                return;
+            case tok_def:
+                HandleDefinition();
+                break;
+            case tok_extern:
+                HandleExtern();
+                break;
+            default:
+                std::cout << "invalid input" << std::endl;
+                getNextToken();
+                break;
+        }
     }
-  }
 }
 //===----------------------------------------------------------------------===//
 // Main driver code.
 //===----------------------------------------------------------------------===//
 //don't modify this part
 
-int main(int argc, char* argv[]) {  
-  if(argc < 2){
-    errs() << "You need to specify the file to compile";
-    return 1;
-  }
-  char* FileName = argv[1];
-  fip = fopen(FileName, "r");
-  if(fip == nullptr){
-    errs() << "The file '" << FileName << "' is not existed";
-    return 1;
-  }
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        errs() << "You need to specify the file to compile";
+        return 1;
+    }
+    char *FileName = argv[1];
+    fip = fopen(FileName, "r");
+    if (fip == nullptr) {
+        errs() << "The file '" << FileName << "' is not existed";
+        return 1;
+    }
 
-  InitializeTypeValue();
+    InitializeTypeValue();
 
-  BinopPrecedence['<'] = 10;
-  BinopPrecedence['+'] = 20;
-  BinopPrecedence['-'] = 20;
-  BinopPrecedence['*'] = 40; // highest.
-  getNextToken();
+    BinopPrecedence['<'] = 10;
+    BinopPrecedence['+'] = 20;
+    BinopPrecedence['-'] = 20;
+    BinopPrecedence['*'] = 40; // highest.
+    getNextToken();
 
-  InitializeModuleAndPassManager();
-  MainLoop();
+    InitializeModuleAndPassManager();
+    MainLoop();
 
-  InitializeAllTargetInfos();
-  InitializeAllTargets();
-  InitializeAllTargetMCs();
-  InitializeAllAsmParsers();
-  InitializeAllAsmPrinters();
+    InitializeAllTargetInfos();
+    InitializeAllTargets();
+    InitializeAllTargetMCs();
+    InitializeAllAsmParsers();
+    InitializeAllAsmPrinters();
 
-  auto TargetTriple = sys::getDefaultTargetTriple();
-  TheModule->setTargetTriple(TargetTriple);
-  
-  std::string Error;
-  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+    auto TargetTriple = sys::getDefaultTargetTriple();
+    TheModule->setTargetTriple(TargetTriple);
 
-  // Print an error and exit if we couldn't find the requested target.
-  // This generally occurs if we've forgotten to initialise the
-  // TargetRegistry or we have a bogus target triple.
-  if (!Target) {
-    errs() << Error;
-    return 1;
-  }
+    std::string Error;
+    auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
 
-  auto CPU = "generic";
-  auto Features = "";
+    // Print an error and exit if we couldn't find the requested target.
+    // This generally occurs if we've forgotten to initialise the
+    // TargetRegistry or we have a bogus target triple.
+    if (!Target) {
+        errs() << Error;
+        return 1;
+    }
 
-  TargetOptions opt;
-  auto RM = Optional<Reloc::Model>();
-  auto TheTargetMachine =
-      Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
-  TheModule->setDataLayout(TheTargetMachine->createDataLayout());
+    auto CPU = "generic";
+    auto Features = "";
 
-  auto Filename = "output.o";
-  std::error_code EC;
-  raw_fd_ostream dest(Filename, EC, sys::fs::OF_None);
+    TargetOptions opt;
+    auto RM = Optional<Reloc::Model>();
+    auto TheTargetMachine =
+            Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+    TheModule->setDataLayout(TheTargetMachine->createDataLayout());
 
-  if (EC) {
-    errs() << "Could not open file: " << EC.message();
-    return 1;
-  }
+    auto Filename = "output.o";
+    std::error_code EC;
+    raw_fd_ostream dest(Filename, EC, sys::fs::OF_None);
 
-  legacy::PassManager pass;
-  auto FileType = CGFT_ObjectFile;
+    if (EC) {
+        errs() << "Could not open file: " << EC.message();
+        return 1;
+    }
 
-  if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
-    errs() << "TheTargetMachine can't emit a file of this type";
-    return 1;
-  }
+    legacy::PassManager pass;
+    auto FileType = LLVMTargetMachine::CGFT_ObjectFile;
 
-  pass.run(*TheModule);
-  dest.flush();
+    if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
+        errs() << "TheTargetMachine can't emit a file of this type";
+        return 1;
+    }
 
-  outs() << "Wrote " << Filename << "\n";
+    pass.run(*TheModule);
+    dest.flush();
 
-  return 0;
+    outs() << "Wrote " << Filename << "\n";
+
+    return 0;
 }
